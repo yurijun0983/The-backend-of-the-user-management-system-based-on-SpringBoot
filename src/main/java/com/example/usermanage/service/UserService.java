@@ -40,4 +40,10 @@ public interface UserService extends IService<User> {
      * @return 是否成功
      */
     Boolean deleteUser(Integer id);
+    /**
+     * 用户注销
+     * @param request
+     * @return 是否成功
+     */
+    int userLogout(HttpServletRequest request);
 }

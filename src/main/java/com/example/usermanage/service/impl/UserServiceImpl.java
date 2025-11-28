@@ -3,6 +3,8 @@ package com.example.usermanage.service.impl;
 import ch.qos.logback.core.util.StringUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.usermanage.common.ErrorCode;
+import com.example.usermanage.exception.BusinessException;
 import com.example.usermanage.mapper.UserMapper;
 import com.example.usermanage.model.User;
 import com.example.usermanage.service.UserService;
@@ -31,30 +33,30 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public Integer userRegister(String userAccount, String userPassword, String checkPassword) {
         //输入为 空直接不注册
         if(StringUtils.isAnyBlank(userAccount,userPassword,checkPassword)){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"参数为空");
         }
 
         if(userAccount.length()<4){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"账号过短");
         }
 
         if(userPassword.length()<8||checkPassword.length()<8){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"密码长度过短");
         }
 
         QueryWrapper<User> queryWrapper=new QueryWrapper<>();
         queryWrapper.eq("username",userAccount);
         long cnt = this.count(queryWrapper);
         if(cnt>0){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"用户账号重复");
         }
         String validAccount = "^[a-zA-Z0-9]{4,}$";
         Matcher matcher = Pattern.compile(validAccount).matcher(userAccount);
         if(!matcher.find()){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"账号格式不符合要求");
         }
         if(!userPassword.equals(checkPassword)){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"两次输入的密码不一致");
         }
         String encryptedPassword = DigestUtils.md5DigestAsHex(userPassword.getBytes());
         
@@ -66,7 +68,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (saveResult) {
             return user.getId();
         } else {
-            return -1;
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"注册失败");
         }
     }
 
@@ -94,7 +96,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safeUser.setId(user.getId());
         safeUser.setUsername(user.getUsername());
         safeUser.setAvatarUrl(user.getAvatarUrl());
-        safeUser.setPassword(user.getPassword());
+        safeUser.setPassword(null);
         safeUser.setGender(user.getGender());
         safeUser.setUserStatus(user.getUserStatus());
         safeUser.setEmail(user.getEmail());
@@ -105,7 +107,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safeUser.setUserRole(user.getUserRole());
 
 
-        request.getSession().setAttribute(USER_LOGIN_STATE,safeUser);
+        request.getSession().setAttribute(UserService.USER_LOGIN_STATE,safeUser);
         return safeUser;
     }
 
@@ -124,5 +126,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return false;
         }
         return this.removeById(id);
+    }
+    @Override
+    public int userLogout(HttpServletRequest request){
+        request.getSession().removeAttribute(UserService.USER_LOGIN_STATE);
+        return 1;
     }
 }

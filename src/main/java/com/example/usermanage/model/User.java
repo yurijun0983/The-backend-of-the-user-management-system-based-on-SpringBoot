@@ -1,9 +1,14 @@
 package com.example.usermanage.model;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
+
 import java.util.Date;
 
 @TableName("users")
+@Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class User {
     @TableId(type = IdType.AUTO)
     private Integer id;
